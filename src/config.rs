@@ -85,20 +85,32 @@ impl ConfigFile {
         let mut result: Self = toml::from_str(&fs::read_to_string(config_path).context(ErrorKind::Configuration)?)
             .context(ErrorKind::Configuration)?;
 
+        if let Some(ref mut paths) = &mut result.git_repos {
+            for path in paths.iter_mut() {
+                *path = shellexpand::tilde::<&str>(&path.as_ref()).into_owned();
+            }
+        }
+
 
         if let Some(ref mut paths) = &mut result.git_repos {
-            let mut expanded_git_globs = vec![];
+            let mut expanded_globs = vec![];
             for path in paths.iter_mut() {
-                if let Ok(entries) = glob::glob(&path) {
-                    for entry in entries {
-                        match entry {
-                            Ok(p) => expanded_git_globs.push(p.display().to_string()),
-                            Err(e) => println!("{:?}", e),
+                if path.contains('*') {
+                    if let Ok(entries) = glob::glob(&path) {
+                        for entry in entries {
+                            match entry {
+                                Ok(p) => {
+                                    if p.is_dir() {
+                                        expanded_globs.push(p.display().to_string())
+                                    }
+                                },
+                                Err(e) => println!("{:?}", e),
+                            }
                         }
                     }
                 }
             }
-            result.git_repos = Some(expanded_git_globs);
+            paths.append(&mut expanded_globs);
         }
 
         Ok(result)
