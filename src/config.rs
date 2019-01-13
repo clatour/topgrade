@@ -8,6 +8,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use structopt::StructOpt;
 use toml;
+use glob;
 
 type Commands = BTreeMap<String, String>;
 
@@ -84,10 +85,20 @@ impl ConfigFile {
         let mut result: Self = toml::from_str(&fs::read_to_string(config_path).context(ErrorKind::Configuration)?)
             .context(ErrorKind::Configuration)?;
 
+
         if let Some(ref mut paths) = &mut result.git_repos {
+            let mut expanded_git_globs = vec![];
             for path in paths.iter_mut() {
-                *path = shellexpand::tilde::<&str>(&path.as_ref()).into_owned();
+                if let Ok(entries) = glob::glob(&path) {
+                    for entry in entries {
+                        match entry {
+                            Ok(p) => expanded_git_globs.push(p.display().to_string()),
+                            Err(e) => println!("{:?}", e),
+                        }
+                    }
+                }
             }
+            result.git_repos = Some(expanded_git_globs);
         }
 
         Ok(result)
