@@ -118,14 +118,14 @@ It's dangerous to run yay since Python based AUR packages will be installed in t
         }
         run_type.execute(yay).check_run()?;
     } else if let Some(sudo) = &sudo {
-        run_type.execute(&sudo).args(&["/usr/bin/pacman", "-Syu"]).check_run()?;
+        run_type.execute(&sudo).args(&["/usr/bin/yaourt", "-Syu", "--aur"]).check_run()?;
     } else {
         print_warning("No sudo or yay detected. Skipping system upgrade");
     }
 
     if cleanup {
         if let Some(sudo) = &sudo {
-            run_type.execute(&sudo).args(&["/usr/bin/pacman", "-Scc"]).check_run()?;
+            run_type.execute(&sudo).args(&["/usr/bin/yaourt", "-Scc"]).check_run()?;
         }
     }
 
