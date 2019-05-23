@@ -10,7 +10,7 @@ use std::collections::HashSet;
 use std::io;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use tokio::runtime::Runtime;
+use tokio::runtime::Builder;
 use tokio_process::CommandExt as TokioCommandExt;
 
 #[derive(Debug)]
@@ -160,7 +160,7 @@ impl Git {
             })
             .collect();
 
-        let mut runtime = Runtime::new().unwrap();
+        let mut runtime = Builder::new().core_threads(2).build().unwrap();
         let results: Vec<bool> = runtime.block_on(join_all(futures))?;
         if results.into_iter().any(|success| !success) {
             Err(ErrorKind::StepFailed.into())
